@@ -5,6 +5,7 @@
 #include "lex.h"
 
 #define _ID							0
+#define _NOP						0
 
 #define REALOP(op)					((op == '+') || \
 									 (op == '-') || \
@@ -24,6 +25,11 @@ char err_id[] = "error";
 char * midexp;
 extern char * yytext;
 
+/* defined in name.c */
+char *newname(void);
+extern void freename(char *name);
+
+/* DAG */
 struct DAG_LinkedListNode {
 	unsigned int no;
 	unsigned int op;
@@ -212,37 +218,240 @@ void displayDAG(void)
 	}
 }
 
-/* defined in name.c */
-char *newname(void);
-extern void freename(char *name);
+/* BinaryTree */
+#define LOC_INIT			0
+#define LOC_LEFT			1
+#define LOC_RIGHT			2
+struct BinaryTreeNode {
+	char *value;
+	unsigned int isOp;
+	unsigned int loc;
+	char *reg;
+	struct BinaryTreeNode *parent;
+	struct BinaryTreeNode *left;
+	struct BinaryTreeNode *right;
+};
 
-char *expression(void);
+/* BinaryTree root */
+struct BinaryTreeNode *BinaryTreeRoot;
+
+struct BinaryTreeNode *BinaryTree_addOPNode(char op, struct BinaryTreeNode *left, struct BinaryTreeNode *right)
+{
+	struct BinaryTreeNode *p;
+
+	p = malloc(sizeof(struct BinaryTreeNode));
+	p->value = malloc(sizeof(char) * 2);
+	sprintf(p->value, "%c", op);
+	p->value[1] = 0;
+	p->isOp = 1;
+	p->loc = LOC_INIT;
+	p->reg = NULL;
+	p->parent = NULL;
+	p->left = left;
+	left->parent = p;
+	left->loc = LOC_LEFT;
+	p->right = right;
+	right->parent = p;
+	right->loc = LOC_RIGHT;
+
+	return p;
+}
+
+struct BinaryTreeNode *BinaryTree_addIDNode(char *id)
+{
+	struct BinaryTreeNode *p;
+
+	p = malloc(sizeof(struct BinaryTreeNode));
+	p->value = malloc(strlen(id) + 1);
+	sprintf(p->value, "%s", id);
+	p->isOp = 0;
+	p->loc = LOC_INIT;
+	p->reg = NULL;
+	p->parent = NULL;
+	p->left = NULL;
+	p->right = NULL;
+
+	return p;
+}
+
+void BinaryTreeNode_displayHelper(struct BinaryTreeNode *p, unsigned int level)
+{
+	int i;
+
+	if (level == 0) {
+		printf("    ");
+	} else {
+		for (i = 0;i < level; i++)
+			printf("    ");
+	}
+	if (level)
+		printf("|__ ");
+
+	printf("%s\n", p->value);
+
+	if (p->left != NULL)
+		BinaryTreeNode_displayHelper(p->left, level + 1);
+	if (p->right != NULL)
+		BinaryTreeNode_displayHelper(p->right, level + 1);
+}
+
+void BinaryTreeNode_display(void)
+{
+	printf("BinaryTree:\n");
+	BinaryTreeNode_displayHelper(BinaryTreeRoot, 0);
+}
+
+/* 0 : same		1 : different */
+unsigned int BinaryTreeNode_cmpValue(struct BinaryTreeNode *p, struct BinaryTreeNode *q)
+{
+	if (p == NULL || q == NULL) {
+		return 1;
+	} else {
+		return strcmp(p->value, q->value);
+	}
+}
+
+/* 0 : same		1 : different */
+unsigned int BinaryTreeNode_AddOrTime(struct BinaryTreeNode *p)
+{
+	return !(strcmp(p->value, "+") ^ strcmp(p->value, "*"));
+}
+
+void BinaryTree_reconstructFHelper(struct BinaryTreeNode *p)
+{
+	struct BinaryTreeNode *pLeft, *pRight;
+
+	if (p == NULL) {
+		return;
+	} else {
+		/* post order */
+		if (p->left != NULL && p->right != NULL) {
+			BinaryTree_reconstructFHelper(p->left);
+			BinaryTree_reconstructFHelper(p->right);
+		} else if ((p->left != NULL) ^ (p->right != NULL)) {
+			printf("BinaryTree_reconstructFHelper_err: one of p'children is NULL, but the other not!\n");
+			return;
+		} else {
+			/* leaf node, no need to reconstruct */
+			return;
+		}
+
+		/*			0					0
+		 *			+					+
+		 *		  /   \ 	===>	  /   \
+		 *	   1 *	   + 2  	   2 +	   * 1
+		 *			 /   \		   /   \
+		 *			+	  *		  +	    *		(posible level)
+		 *			3	  4		  3		4
+		 */
+		if (!BinaryTreeNode_cmpValue(p, p->right) && BinaryTreeNode_cmpValue(p, p->left) && !BinaryTreeNode_AddOrTime(p)) {
+			/* p->value = * or +, and p->value is equal to right->value, not left->value */
+			pLeft = p->left;
+			p->left = p->right;
+			p->right = pLeft;
+		}
+		/*					0							0							0
+		 *			ptr-->	+					ptr-->  +				  	ptr-->  +
+		 *				  /   \ 					  /   \						  /   \	
+		 *				 /	   \		===>		 /	   \		===>		 /	   \
+		 *			  1 +		+ 2 			  2 +		+ 5				  5 +		* 7
+		 *			   / \	   / \				   / \	   / \				   / \
+		 *			  /   \	  /   \			  	  /   \	  /   \     	      /   \
+		 *			 +	   * +     *		   1 +	   * *     *    	   2 +     * 8				(Recursion!!!)
+		 *			 3     4 5     6			/ \    6 7     8			/ \
+		 *									   /   \					   /   \
+		 *									  +		*					1 +     * 6
+		 *									  3     4					 / \
+		 *																/   \
+		 *												  		 	   +     *
+		 *														 	   3	 4
+		 */
+		else if (!BinaryTreeNode_cmpValue(p, p->right) && !BinaryTreeNode_cmpValue(p, p->left) && !BinaryTreeNode_AddOrTime(p)) {
+			/* p->value = * or +, and p->value is equal to right->value, and left->value */
+			while (!BinaryTreeNode_cmpValue(p, p->right) && !BinaryTreeNode_cmpValue(p, p->left) && !BinaryTreeNode_AddOrTime(p)) {
+				/* 0->right = 5, remember to change 5's parent */
+				pRight = p->right;
+				p->right = p->right->left;
+				p->right->parent = p;
+				/* 0->left = 2, and 2->left = 1, remember to change 1's parent */
+				pLeft = p->left;
+				p->left = pRight;
+				p->left->left = pLeft;
+				p->left->left->parent = p->left;
+				/* only (1 & 5)'s parent is changed */
+			}
+		}
+	}
+}
+
+void BinaryTree_reconstructF(void)
+{
+	BinaryTree_reconstructFHelper(BinaryTreeRoot);
+}
+
+void BinaryTree_generateTACHelper(struct BinaryTreeNode *p)
+{
+	if (p == NULL) {
+		return;
+	} else {
+		/* post order */
+		if (p->left != NULL && p->right != NULL) {
+			BinaryTree_generateTACHelper(p->left);
+			BinaryTree_generateTACHelper(p->right);
+
+			p->reg = p->left->reg;
+			// p->left->reg = NULL;		// will change this assign for DAG in the future
+			printf("    %s %c= %s\n", p->reg, p->value[0], p->right->reg);
+			// release right->reg
+			freename(p->right->reg);
+		} else if ((p->left != NULL) ^ (p->right != NULL)) {
+			printf("BinaryTree_reconstructFHelper_err: one of p'children is NULL, but the other not!\n");
+			return;
+		} else {
+			p->reg = newname();
+			printf("    %s = %s\n", p->reg, p->value);
+		}
+
+		/* BinaryTreeRoot release the last reg */
+		if (p == BinaryTreeRoot)
+			freename(p->reg);
+		return;
+	}
+}		
+
+void BinaryTree_generateTAC(void)
+{
+	BinaryTree_generateTACHelper(BinaryTreeRoot);
+}
+
+struct BinaryTreeNode *expression(void);
 
 void statements (void)
 {
-	init_DAGList();
 	/*  statements -> expression SEMI  |  expression SEMI statements  */
+	struct BinaryTreeNode *statementRoot;
+
 	printf("Please input an affix expression and ending with \";\"\n");
 	while (!match(EOI)) {
-		init_DAGList();
-		if (expression() == 0) {
-			goto statements_err;
-		}
+		statementRoot = expression();
 
+		BinaryTreeRoot = statementRoot;
+		BinaryTree_reconstructF();
+		BinaryTreeNode_display();
+		BinaryTree_generateTAC();
 		if (match(SEMI)) {
 			printf("Please input an affix expression and ending with \";\"\n");
 			advance();
 		} else {
 			fprintf(stderr, "%d: Inserting missing semicolon\n", yylineno);
 		}
-		displayDAG();
 	}
 statements_err:
 	printf("statements_err: rise from expression call!\n");
 	return;
 }
 
-char *expression()
+struct BinaryTreeNode *expression()
 { 
 	/*
 	 * expression -> PLUS expression expression
@@ -251,7 +460,8 @@ char *expression()
 	 *            |  DIVISION expression expression
 	 *            |  NUM_OR_ID
 	 */
-	struct DAG_LinkedListNode *p;
+	struct BinaryTreeNode *p;
+	struct BinaryTreeNode *left, *right;
 	char *leftAffix, *rightAffix;
 
 	if (match(NUM_OR_ID)) {
@@ -261,12 +471,10 @@ char *expression()
 
 		advance();
 
-		p = searchNo(addDAGIDNode(leftAffix));
-		
-		/* for debug */
-		displayDAG();
+		p = BinaryTree_addIDNode(leftAffix);
+		free(leftAffix);
 		if (p != NULL) {
-			return p->affix;
+			return p;
 		} else {
 			goto expression_err;
 		}
@@ -274,15 +482,13 @@ char *expression()
 		char op = yytext[0];
 		advance();
 
-		leftAffix = expression();
-		rightAffix = expression();
+		left = expression();
+		right = expression();
 
-		p = searchNo(addDAGOPNode(op, leftAffix, rightAffix));
+		p = BinaryTree_addOPNode(op, left, right);
 
-		/* for debug */
-		displayDAG();
 		if (p != NULL) {
-			return p->affix;
+			return p;
 		} else {
 			goto expression_err;
 		}

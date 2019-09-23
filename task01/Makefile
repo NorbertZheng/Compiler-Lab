@@ -1,6 +1,6 @@
 CC=gcc
 IMPROVED=improved
-target=plain $(IMPROVED) retval affix retsuff retinf retinfbak1
+target=plain $(IMPROVED) retval affix retsuff retinf retinfbak1 retinfbak2
 .c.o:
 	echo rebuilding $*.o from $*.c
 	$(CC) -ggdb -c $<
@@ -28,6 +28,9 @@ retinf: lex.o retinf.o main.o
 
 retinfbak1: lex.o retinfbak1.o main.o
 	$(CC) -o ./retinfbak1 name.o retinfbak1.o lex.o main.o
+
+retinfbak2: lex.o retinfbak2.o main.o
+	$(CC) -o ./retinfbak2 name.o retinfbak2.o lex.o main.o
 
 lex.o: lex.h
 	$(CC) -c lex.c
