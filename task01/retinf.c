@@ -20,6 +20,10 @@
 									((int) ch == TIMES) ? '*' : \
 									((int) ch == DIVISION) ? '/' : \
 									((int) ch == _ID) ? '=' : '?')
+#define OPHIGHPRIOR(last, current)	((current == PLUS && (last == PLUS || last == MINUS)) || \
+									(current == MINUS && (last == PLUS || last == MINUS)) || \
+									(current == TIMES)									  || \
+									(current == DIVISION))
 
 char err_id[] = "error";
 char * midexp;
@@ -45,22 +49,22 @@ struct DAG_LinkedList {
 	int size;
 } DAGList;
 
-void DAG_initDAGList(void)
+void DAG_initDAGList(struct DAG_LinkedList *list)
 {
-	DAGList.head = NULL;
-	DAGList.tail = NULL;
-	DAGList.size = 0;
+	list->head = NULL;
+	list->tail = NULL;
+	list->size = 0;
 }
 
 /* 0 : donot exist		other : no in the DAGList */
-unsigned int DAG_searchIdOrOp(unsigned int isOp, char *value, unsigned int left, unsigned int right)
+unsigned int DAG_searchIdOrOp(struct DAG_LinkedList *list, unsigned int isOp, char *value, unsigned int left, unsigned int right)
 {
 	struct DAG_LinkedListNode *p;
 
-	if (DAGList.size == 0) {
+	if (list->size == 0) {
 		return 0;
 	} else {
-		p = DAGList.head;
+		p = list->head;
 		while (p != NULL) {
 			if (isOp) {
 				/* use left and right */
@@ -84,14 +88,14 @@ unsigned int DAG_searchIdOrOp(unsigned int isOp, char *value, unsigned int left,
 	}
 }
 
-struct DAG_LinkedListNode *searchNo(unsigned int no)
+struct DAG_LinkedListNode *searchNo(struct DAG_LinkedList *list, unsigned int no)
 {
 	struct DAG_LinkedListNode *p;
 
-	if (DAGList.size == 0) {
+	if (list->size == 0) {
 		goto searchNo_err;
 	} else {
-		p = DAGList.head;
+		p = list->head;
 		while (p != NULL) {
 			if (p->no == no) {
 				break;
@@ -109,16 +113,16 @@ searchNo_err:
 	return NULL;
 }
 
-unsigned int DAG_addIDNode(char *name)
+unsigned int DAG_addIDNode(struct DAG_LinkedList *list, char *name)
 {
 	unsigned int matchNo;
 	struct DAG_LinkedListNode *node;
 
-	if (DAGList.size == 0) {
+	if (list->size == 0) {
 		goto addDAGIDNode_add;
 	} else {
 		/* DAGList has contents */
-		matchNo = DAG_searchIdOrOp(0, name, 0, 0);
+		matchNo = DAG_searchIdOrOp(list, 0, name, 0, 0);
 		if (matchNo != 0) {
 			// printf("addDAGIDNode: I'm done!\n");
 			return matchNo;
@@ -129,7 +133,7 @@ unsigned int DAG_addIDNode(char *name)
 addDAGIDNode_add:
 	// printf("addDAGIDNode: prepare to add!\n");
 	node = malloc(sizeof(struct DAG_LinkedListNode));
-	node->no = DAGList.size + 1;
+	node->no = list->size + 1;
 	node->isOp = 0;
 	// printf("addDAGIDNode: prepare to malloc for affix!\n");
 	node->value = malloc(strlen(name) + 1);
@@ -140,29 +144,29 @@ addDAGIDNode_add:
 	node->right = 0;
 	node->next = NULL;
 	/* add to the list */
-	if (DAGList.size == 0) {
-		DAGList.head = node;
-		DAGList.tail = node;
-		DAGList.size += 1;
+	if (list->size == 0) {
+		list->head = node;
+		list->tail = node;
+		list->size += 1;
 	} else {
-		DAGList.tail->next = node;
-		DAGList.size += 1;
-		DAGList.tail = node;
+		list->tail->next = node;
+		list->size += 1;
+		list->tail = node;
 	}
 	// printf("addDAGIDNode: I'm done!\n");
 	return node->no;
 }
 
-unsigned int DAG_addOPNode(char *op, unsigned int left, unsigned int right)
+unsigned int DAG_addOPNode(struct DAG_LinkedList *list, char *op, unsigned int left, unsigned int right)
 {
 	unsigned int exprMatchNo;
 	struct DAG_LinkedListNode *node;
 
-	if (DAGList.size == 0) {
+	if (list->size == 0) {
 		goto DAG_addOPNode_err;		/* No contents mean no id, left right don't match */
 	} else {
 		/* DAGList has contents */
-		exprMatchNo = DAG_searchIdOrOp(1, op, left, right);
+		exprMatchNo = DAG_searchIdOrOp(list, 1, op, left, right);
 		if (exprMatchNo != 0) {
 			return exprMatchNo;
 		} else {
@@ -171,7 +175,7 @@ unsigned int DAG_addOPNode(char *op, unsigned int left, unsigned int right)
 	}
 DAG_addOPNode_add:
 	node = malloc(sizeof(struct DAG_LinkedListNode));
-	node->no = DAGList.size + 1;
+	node->no = list->size + 1;
 	node->isOp = 1;
 	node->value = malloc(sizeof(char) * 2);
 	sprintf(node->value, "%s", op);
@@ -180,14 +184,14 @@ DAG_addOPNode_add:
 	node->right = right;
 	node->next = NULL;
 	/* add to the list */
-	if (DAGList.size == 0) {
-		DAGList.head = node;
-		DAGList.tail = node;
-		DAGList.size += 1;
+	if (list->size == 0) {
+		list->head = node;
+		list->tail = node;
+		list->size += 1;
 	} else {
-		DAGList.tail->next = node;
-		DAGList.size += 1;
-		DAGList.tail = node;
+		list->tail->next = node;
+		list->size += 1;
+		list->tail = node;
 	}
 	return node->no;
 DAG_addOPNode_err:
@@ -195,14 +199,14 @@ DAG_addOPNode_err:
 	return 0;
 }
 
-void DAG_display(void)
+void DAG_display(struct DAG_LinkedList *list)
 {
 	struct DAG_LinkedListNode *p;
 
-	if (DAGList.size == 0) {
+	if (list->size == 0) {
 		printf("It's empty!\n");
 	} else {
-		p = DAGList.head;
+		p = list->head;
 		printf("no\top\tleft\tright\n");
 		while (p != NULL) {
 			if (!(p->isOp)) {
@@ -215,15 +219,15 @@ void DAG_display(void)
 	}
 }
 
-void DAG_free(void)
+void DAG_free(struct DAG_LinkedList *list)
 {
 	struct DAG_LinkedListNode *p, *q;
 
-	if (DAGList.size == 0) {
+	if (list->size == 0) {
 		// do nothing
 	} else {
 		// printf("DAG_free: prepare to free all!\n");
-		p = DAGList.head;
+		p = list->head;
 		q = p->next;
 		while (q != NULL) {
 			free(p);
@@ -234,7 +238,7 @@ void DAG_free(void)
 		free(p);
 		// printf("DAG_free: free all!\n");
 	}
-	DAG_initDAGList();
+	DAG_initDAGList(list);
 	return;
 }
 
@@ -445,7 +449,54 @@ void BinaryTree_generateTAC(void)
 	BinaryTree_generateTACHelper(BinaryTreeRoot);
 }
 
-unsigned int BinaryTree_buildDAGHelper(struct BinaryTreeNode *p)
+char *BinaryTree_generateInfixHelper(struct BinaryTreeNode *p)
+{
+	char *left, *right, *expr;
+
+	if (p == NULL) {
+		return NULL;
+	} else {
+		/* post order */
+		if (p->left != NULL && p->right != NULL) {
+			left = BinaryTree_generateInfixHelper(p->left);
+			right = BinaryTree_generateInfixHelper(p->right);
+
+			if (p->parent == NULL) {
+				expr = malloc(strlen(left) + strlen(right) + 4);
+				sprintf(expr, "%s %c %s", left, p->value[0], right);
+				expr[strlen(left) + strlen(right) + 3] = 0;
+			} else {
+				if (OPHIGHPRIOR(CHAR2MACRO(p->parent->value[0]), CHAR2MACRO(p->value[0]))) {
+					expr = malloc(strlen(left) + strlen(right) + 4);
+					sprintf(expr, "%s %c %s", left, p->value[0], right);
+					expr[strlen(left) + strlen(right) + 3] = 0;
+				} else {
+					expr = malloc(strlen(left) + strlen(right) + 6);
+					sprintf(expr, "(%s %c %s)", left, p->value[0], right);
+					expr[strlen(left) + strlen(right) + 5] = 0;
+				}
+			}
+			free(left);
+			free(right);
+		} else if ((p->left != NULL) ^ (p->right != NULL)) {
+			printf("BinaryTree_reconstructFHelper_err: one of p'children is NULL, but the other not!\n");
+			return NULL;
+		} else {
+			expr = malloc(strlen(p->value) + 1);
+			sprintf(expr, "%s", p->value);
+			expr[strlen(p->value)] = 0;
+		}
+
+		return expr;
+	}
+}
+
+void BinaryTree_generateInfix(void)
+{
+	printf("the infix expression is %s\n", BinaryTree_generateInfixHelper(BinaryTreeRoot));
+}
+
+unsigned int BinaryTree_buildDAGHelper(struct DAG_LinkedList *list, struct BinaryTreeNode *p)
 {
 	unsigned int leftNo, rightNo;
 
@@ -454,11 +505,11 @@ unsigned int BinaryTree_buildDAGHelper(struct BinaryTreeNode *p)
 	} else {
 		/* post order */
 		if (p->left != NULL && p->right != NULL) {
-			leftNo = BinaryTree_buildDAGHelper(p->left);
-			rightNo = BinaryTree_buildDAGHelper(p->right);
+			leftNo = BinaryTree_buildDAGHelper(list, p->left);
+			rightNo = BinaryTree_buildDAGHelper(list, p->right);
 
 			if (p->isOp) {
-				return DAG_addOPNode(p->value, leftNo, rightNo);
+				return DAG_addOPNode(list, p->value, leftNo, rightNo);
 			} else {
 				goto BinaryTree_buildDAGHelper_err;
 				// return DAG_addIDNode(p->value);
@@ -471,7 +522,7 @@ unsigned int BinaryTree_buildDAGHelper(struct BinaryTreeNode *p)
 				goto BinaryTree_buildDAGHelper_err;
 				// return DAG_addOPNode(p->value, leftNo, rightNo);
 			} else {
-				return DAG_addIDNode(p->value);
+				return DAG_addIDNode(list, p->value);
 			}
 		}
 	}
@@ -480,9 +531,9 @@ BinaryTree_buildDAGHelper_err:
 	return 0;
 }
 
-void BinaryTree_buildDAG(void)
+void BinaryTree_buildDAG(struct DAG_LinkedList *list)
 {
-	BinaryTree_buildDAGHelper(BinaryTreeRoot);
+	BinaryTree_buildDAGHelper(list, BinaryTreeRoot);
 }
 
 void BinaryTree_freeHelper(struct BinaryTreeNode *p)
@@ -525,12 +576,14 @@ void statements (void)
 
 		BinaryTreeRoot = statementRoot;
 		BinaryTree_reconstructF();
-		BinaryTreeNode_display();
-		BinaryTree_buildDAG();
-		DAG_display();
+		// BinaryTreeNode_display();
+		BinaryTree_generateTAC();
+		BinaryTree_generateInfix();
+		BinaryTree_buildDAG(&DAGList);
+		// DAG_display(&DAGList);
 		// free all, prepare for the next loop
 		BinaryTree_free();
-		DAG_free();
+		DAG_free(&DAGList);
 		if (match(SEMI)) {
 			printf("Please input an affix expression and ending with \";\"\n");
 			advance();
