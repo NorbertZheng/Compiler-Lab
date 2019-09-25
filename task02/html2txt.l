@@ -24,6 +24,7 @@ UANYNTRS	({ASCNTRS}|({U2}{U})|({U3}{U}{U})|({U4}{U}{U}{U}))
 /* only match unicode, don't match ascii char */
 UONLY		({U2}{U}|{U3}{U}{U}|{U4}{U}{U}{U})
 
+Space		([ \t]*)
 Ws			([ \t\r\n]*)
 Letter		([a-zA-Z])
 URL			(([a-zA-Z]+)"://"[^ \t\r\n\"']*)
@@ -37,6 +38,9 @@ HREF		({URL}|[^\"' \t\r\n]+)
 %x TAG
 %x COMMENT
 %%
+%{
+	unsigned int changeLine = 1;
+%}
 
 ("<"[Ss][Cc][Rr][Ii][Pp][Tt][^>]*">")				{BEGIN(SCRIPT);}
 ("<"[Ss][Tt][Yy][Ll][Ee][^>]*">")					{BEGIN(STYLE);}
@@ -97,9 +101,20 @@ HREF		({URL}|[^\"' \t\r\n]+)
 (&[nN][bB][sS][pP]";")								{
 														printf(" ");
 													}
-{Ws}												{;}
+[ \t]												{;}
+[ \t]{2,}	|
+[\n\r]+												{
+														changeLine = 1;
+													}
+({UANYNTRS})										{
+														if (changeLine) {
+															printf("\n");
+															changeLine = 0;
+														}
+														printf("%s", yytext);
+													}
 ({UANYNTRS})/("<"[ \t]*"/")							{
-														printf("%s\n", yytext);
+														printf("%s", yytext);
 													}
 
                      
