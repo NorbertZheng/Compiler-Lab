@@ -115,6 +115,49 @@ LF_PTR lf_concate_plus(LF_PTR lf, AST_PTR exp)
 	return lf;
 }
 
+LF_PTR lf_alt_plus(LF_PTR lf, AST_PTR exp)
+{
+	LF_PTR tmp;
+
+	// use lf to return, tmp to visit
+	tmp = lf = lf_clone(lf);
+	if (tmp == NULL)
+		return NULL;
+	while (tmp != NULL) {
+		// when mkOpNode, we optimize its processing
+		tmp->exp = arrangeOpNode(Alt, tmp->exp, exp);
+		tmp = tmp->next;
+	}
+	return lf;
+}
+
+LF_PTR lf_ext_plus(Kind op, LF_PTR lf1, LF_PTR lf2)
+{
+	LF_PTR head, tmp, lf; 
+	// while we use head to return, lf to visit, use lf instead of lf1 to avoid changing the structure of lf1
+	head = lf = lf_clone(lf1);
+
+	// when lf1 is NULL, (lf1 - lf2) == lf2
+	if (lf1 == NULL)
+		return NULL;
+
+	while (lf2 != NULL) {
+		tmp = lf;
+		while (tmp != NULL) {
+			// same symbol, we need to factor out the left common factor
+			if (tmp->symbol == lf2->symbol) {
+				tmp->exp = arrangeOpNode(op, tmp->exp, lf2->exp);
+				goto NEXT;
+			}
+			tmp = tmp->next;
+		}
+		// no left common factor match with lf2's, just ignore
+NEXT:
+		lf2 = lf2 -> next;
+	}
+	return head;
+}
+
 int lf_length(LF_PTR lf)
 {
 	int len = 0;
@@ -171,27 +214,8 @@ AST_PTR EPSILON;
 
 static LF_PTR (*union_method)() = lf_union;			// func pointer, why not use lf_union_plus
 static LF_PTR (*seq_method)() = lf_concate;
-
-void linear_form(AST_PTR exp, int stated);
-
-void linear_form_helper(AST_PTR lf_exp, int stated)
-{
-	if (lf_exp->op == Or) {
-		linear_form_helper(lf_exp->lchild, stated);
-		linear_form_helper(lf_exp->rchild, stated);
-	} else if (lf_exp->op == Seq) {
-		printf("lf_exp->lchild->op: %d\n", lf_exp->lchild->op);
-		if (lf_exp->lchild->op == Alpha) {
-			// add state Ai
-			addstate(lf_exp->rchild);
-			linear_form(lf_exp->rchild, stated);
-		} else if (lf_exp->rchild->op == Alpha) {
-			// add state Ai
-			addstate(lf_exp->lchild);
-			linear_form(lf_exp->lchild, stated);
-		}
-	}
-}
+static LF_PTR (*ext_method)() = lf_ext_plus;
+static LF_PTR (*alt_method)() = lf_alt_plus;
 
 void linear_form(AST_PTR exp, int stated)
 {
@@ -285,6 +309,68 @@ void linear_form(AST_PTR exp, int stated)
 				tmp = tmp->next;
 			}
 		}
+	} else if (exp->op == Alt) {
+		// reconstruct exp
+		printf("begin");
+		linear_form(exp->lchild, 0);
+		linear_form(exp->rchild, 0);
+		// set exp's attr
+		exp->nullable = exp->lchild->nullable & exp->rchild->nullable;
+		exp->lf = union_method(alt_method(Alt, exp->lchild->lf, exp->rchild), alt_method(Alt, exp->rchild->lf, exp->lchild));
+		printf("end");
+		// add all state
+		if (stated) {
+			tmp = exp->lf;
+			while (tmp != NULL) {
+				old_next_state = next_state;
+				addstate(tmp->exp);
+				if (old_next_state != next_state) {
+					linear_form(tmp->exp, stated);
+				}
+				// update tmp
+				tmp = tmp->next;
+			}
+		}
+	} else if (exp->op == And) {
+		// reconstruct exp
+		linear_form(exp->lchild, 0);
+		linear_form(exp->rchild, 0);
+		// set exp's attr
+		exp->nullable = exp->lchild->nullable & exp->rchild->nullable;
+		exp->lf = ext_method(And, exp->lchild->lf, exp->rchild->lf);
+		// add all state
+		if (stated) {
+			tmp = exp->lf;
+			while (tmp != NULL) {
+				old_next_state = next_state;
+				addstate(tmp->exp);
+				if (old_next_state != next_state) {
+					linear_form(tmp->exp, stated);
+				}
+				// update tmp
+				tmp = tmp->next;
+			}
+		}
+	} else if (exp->op == Diff) {
+		// reconstruct exp
+		linear_form(exp->lchild, 0);
+		linear_form(exp->rchild, 0);
+		// set exp's attr
+		exp->nullable = exp->lchild->nullable & !(exp->rchild->nullable);
+		exp->lf = ext_method(Diff, exp->lchild->lf, exp->rchild->lf);
+		// add all state
+		if (stated) {
+			tmp = exp->lf;
+			while (tmp != NULL) {
+				old_next_state = next_state;
+				addstate(tmp->exp);
+				if (old_next_state != next_state) {
+					linear_form(tmp->exp, stated);
+				}
+				// update tmp
+				tmp = tmp->next;
+			}
+		}
 	}
 }
 
@@ -314,6 +400,8 @@ void reg2fa(AST_PTR exp, int is_dfa)
 		union_method = lf_union_plus;
 		if (!is_minus(exp))
 			seq_method = lf_concate_plus;
+			ext_method = lf_ext_plus;
+			alt_method = lf_alt_plus;
 		// init
 		reset_hash();
 		free(StateTable);

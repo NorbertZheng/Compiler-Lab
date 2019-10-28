@@ -1,3 +1,5 @@
+make
+make clean
 for i in {1..9}
 do
 rm -rf testsuite/ex$i.d/reg2dfa.bak/
