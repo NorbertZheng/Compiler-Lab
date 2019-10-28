@@ -1,0 +1,16 @@
+digraph
+  G { label="DFA of ((a*b*a*b*)*(a*b*a*b*)*(a*b*a*b*)*(a*b*a*b*)*)*";
+ 
+rankdir=LR
+start[shape =none]
+start ->node_1
+node_1 [label="D1", shape = doublecircle]
+node_1 -> node_2 [label ="b"]
+node_1 -> node_3 [label ="a"]
+node_2 [label="D2", shape = doublecircle]
+node_2 -> node_3 [label ="a"]
+node_2 -> node_2 [label ="b"]
+node_3 [label="D3", shape = doublecircle]
+node_3 -> node_2 [label ="b"]
+node_3 -> node_3 [label ="a"]
+}

@@ -1,0 +1,71 @@
+digraph  G {label ="((ab|ba)*aa|(ab|ba)*bb)*(ab|ba)*";
+node_8[label="a"]
+node_9[label="b"]
+node_7[label=".", shape=circle]
+node_7  -> node_8[dir=none];
+node_7  -> node_9[dir=none];
+node_11[label="b"]
+node_12[label="a"]
+node_10[label=".", shape=circle]
+node_10  -> node_11[dir=none];
+node_10  -> node_12[dir=none];
+node_6[label="|", shape=circle]
+node_6  -> node_7[dir=none];
+node_6  -> node_10[dir=none];
+node_5[label="*", shape=circle]
+node_5  -> node_6[dir=none];
+node_13[label="a"]
+node_4[label=".", shape=circle]
+node_4  -> node_5[dir=none];
+node_4  -> node_13[dir=none];
+node_14[label="a"]
+node_3[label=".", shape=circle]
+node_3  -> node_4[dir=none];
+node_3  -> node_14[dir=none];
+node_20[label="a"]
+node_21[label="b"]
+node_19[label=".", shape=circle]
+node_19  -> node_20[dir=none];
+node_19  -> node_21[dir=none];
+node_23[label="b"]
+node_24[label="a"]
+node_22[label=".", shape=circle]
+node_22  -> node_23[dir=none];
+node_22  -> node_24[dir=none];
+node_18[label="|", shape=circle]
+node_18  -> node_19[dir=none];
+node_18  -> node_22[dir=none];
+node_17[label="*", shape=circle]
+node_17  -> node_18[dir=none];
+node_25[label="b"]
+node_16[label=".", shape=circle]
+node_16  -> node_17[dir=none];
+node_16  -> node_25[dir=none];
+node_26[label="b"]
+node_15[label=".", shape=circle]
+node_15  -> node_16[dir=none];
+node_15  -> node_26[dir=none];
+node_2[label="|", shape=circle]
+node_2  -> node_3[dir=none];
+node_2  -> node_15[dir=none];
+node_1[label="*", shape=circle]
+node_1  -> node_2[dir=none];
+node_30[label="a"]
+node_31[label="b"]
+node_29[label=".", shape=circle]
+node_29  -> node_30[dir=none];
+node_29  -> node_31[dir=none];
+node_33[label="b"]
+node_34[label="a"]
+node_32[label=".", shape=circle]
+node_32  -> node_33[dir=none];
+node_32  -> node_34[dir=none];
+node_28[label="|", shape=circle]
+node_28  -> node_29[dir=none];
+node_28  -> node_32[dir=none];
+node_27[label="*", shape=circle]
+node_27  -> node_28[dir=none];
+node_0[label=".", shape=circle]
+node_0  -> node_1[dir=none];
+node_0  -> node_27[dir=none];
+}

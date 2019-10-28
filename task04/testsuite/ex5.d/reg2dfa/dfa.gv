@@ -1,0 +1,19 @@
+digraph
+  G { label="DFA of ((ab|ba)*aa|(ab|ba)*bb)*(ab|ba)*";
+ 
+rankdir=LR
+start[shape =none]
+start ->node_1
+node_1 [label="D1", shape = doublecircle]
+node_1 -> node_2 [label ="b"]
+node_1 -> node_4 [label ="a"]
+node_2 [label="D2", shape = circle]
+node_2 -> node_3 [label ="a"]
+node_2 -> node_1 [label ="b"]
+node_3 [label="D3", shape = doublecircle]
+node_3 -> node_2 [label ="b"]
+node_3 -> node_4 [label ="a"]
+node_4 [label="D4", shape = circle]
+node_4 -> node_3 [label ="b"]
+node_4 -> node_1 [label ="a"]
+}

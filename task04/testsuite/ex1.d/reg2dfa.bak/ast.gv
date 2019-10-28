@@ -1,0 +1,115 @@
+digraph  G {label ="(a|b)*babab(a|b)*bab(a|b)*|(a|b)*bba(a|b)*bab(a|b)*";
+node_5[label="a"]
+node_6[label="b"]
+node_4[label="|", shape=circle]
+node_4  -> node_5[dir=none];
+node_4  -> node_6[dir=none];
+node_3[label="*", shape=circle]
+node_3  -> node_4[dir=none];
+node_15[label="b"]
+node_16[label="a"]
+node_14[label=".", shape=circle]
+node_14  -> node_15[dir=none];
+node_14  -> node_16[dir=none];
+node_17[label="b"]
+node_13[label=".", shape=circle]
+node_13  -> node_14[dir=none];
+node_13  -> node_17[dir=none];
+node_18[label="a"]
+node_12[label=".", shape=circle]
+node_12  -> node_13[dir=none];
+node_12  -> node_18[dir=none];
+node_19[label="b"]
+node_11[label=".", shape=circle]
+node_11  -> node_12[dir=none];
+node_11  -> node_19[dir=none];
+node_22[label="a"]
+node_23[label="b"]
+node_21[label="|", shape=circle]
+node_21  -> node_22[dir=none];
+node_21  -> node_23[dir=none];
+node_20[label="*", shape=circle]
+node_20  -> node_21[dir=none];
+node_10[label=".", shape=circle]
+node_10  -> node_11[dir=none];
+node_10  -> node_20[dir=none];
+node_24[label="b"]
+node_9[label=".", shape=circle]
+node_9  -> node_10[dir=none];
+node_9  -> node_24[dir=none];
+node_25[label="a"]
+node_8[label=".", shape=circle]
+node_8  -> node_9[dir=none];
+node_8  -> node_25[dir=none];
+node_26[label="b"]
+node_7[label=".", shape=circle]
+node_7  -> node_8[dir=none];
+node_7  -> node_26[dir=none];
+node_2[label=".", shape=circle]
+node_2  -> node_3[dir=none];
+node_2  -> node_7[dir=none];
+node_29[label="a"]
+node_30[label="b"]
+node_28[label="|", shape=circle]
+node_28  -> node_29[dir=none];
+node_28  -> node_30[dir=none];
+node_27[label="*", shape=circle]
+node_27  -> node_28[dir=none];
+node_1[label=".", shape=circle]
+node_1  -> node_2[dir=none];
+node_1  -> node_27[dir=none];
+node_35[label="a"]
+node_36[label="b"]
+node_34[label="|", shape=circle]
+node_34  -> node_35[dir=none];
+node_34  -> node_36[dir=none];
+node_33[label="*", shape=circle]
+node_33  -> node_34[dir=none];
+node_43[label="b"]
+node_44[label="b"]
+node_42[label=".", shape=circle]
+node_42  -> node_43[dir=none];
+node_42  -> node_44[dir=none];
+node_45[label="a"]
+node_41[label=".", shape=circle]
+node_41  -> node_42[dir=none];
+node_41  -> node_45[dir=none];
+node_48[label="a"]
+node_49[label="b"]
+node_47[label="|", shape=circle]
+node_47  -> node_48[dir=none];
+node_47  -> node_49[dir=none];
+node_46[label="*", shape=circle]
+node_46  -> node_47[dir=none];
+node_40[label=".", shape=circle]
+node_40  -> node_41[dir=none];
+node_40  -> node_46[dir=none];
+node_50[label="b"]
+node_39[label=".", shape=circle]
+node_39  -> node_40[dir=none];
+node_39  -> node_50[dir=none];
+node_51[label="a"]
+node_38[label=".", shape=circle]
+node_38  -> node_39[dir=none];
+node_38  -> node_51[dir=none];
+node_52[label="b"]
+node_37[label=".", shape=circle]
+node_37  -> node_38[dir=none];
+node_37  -> node_52[dir=none];
+node_32[label=".", shape=circle]
+node_32  -> node_33[dir=none];
+node_32  -> node_37[dir=none];
+node_55[label="a"]
+node_56[label="b"]
+node_54[label="|", shape=circle]
+node_54  -> node_55[dir=none];
+node_54  -> node_56[dir=none];
+node_53[label="*", shape=circle]
+node_53  -> node_54[dir=none];
+node_31[label=".", shape=circle]
+node_31  -> node_32[dir=none];
+node_31  -> node_53[dir=none];
+node_0[label="|", shape=circle]
+node_0  -> node_1[dir=none];
+node_0  -> node_31[dir=none];
+}
