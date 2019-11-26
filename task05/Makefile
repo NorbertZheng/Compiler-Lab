@@ -7,6 +7,9 @@ all: lambda
 clean: 
 	rm *.o y.tab.c y.tab.h lex.yy.c
 
+clpdf:
+	rm *.output *.out *.pdf *.aux *.tex *.log
+
 # ------------------------------------------------------------
 .c.o:
 	$(CC) -pg -g3 -Wall $(INCLUDE) -c $(CFLAGS) $(MODEL) $*.c

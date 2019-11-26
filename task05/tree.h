@@ -17,7 +17,7 @@ typedef enum {
 typedef struct Ast {
 	Node_kind kind;
 	int value;			/* for CONST and De Brujin index */
-	struct Ast *lchild,	/*  for variable name and abstraction variable & apply function  body */
+	struct Ast *lchild;	/*  for variable name and abstraction variable & apply function  body */
 	struct Ast *rchild;	/* for abstraction body  and app argument*/
 	struct Ast *cond;	/* for condition */
 } AST;

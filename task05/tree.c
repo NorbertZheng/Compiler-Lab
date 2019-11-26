@@ -188,6 +188,7 @@ void print_expression(AST * tree, FILE *out)
 void printtree(AST * t)
 {
 	fprintf(texfile, "\\exptree{");
+	printf("%x\n", texfile);
 	print_expression(t, texfile);
 	fprintf(texfile, "}{\\Tree\n");
 	printtree_rec(t);
