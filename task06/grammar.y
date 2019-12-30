@@ -1,6 +1,7 @@
 %{
 /* the grammar of lambda expression */
 #include "tree.h"
+#include "type.h"
 
 void yyerror(char const *);
 /************************************/
@@ -26,15 +27,36 @@ lines: 		decl
 		;
 
 decl:		LET {is_decl = 1;} ID '=' expr ';'	{
-				name_env[current] = (char *) $3->lchild;
-				ast_env[current++] = $5;
+				Type_ptr type = typing(NULL, $5, current);
+
+				ast_env[current] = $5;
+				global_type_env[current] = storetype(type);
+				name_env[current++] = (char *) $3->lchild;
+
+				printf("%s is defined: ", (char *) $3->lchild);
+				printtype(type);
+				printf("\n");
+				if (yyin == stdin) {
+					printf("\nplease input a lambda term with \";\":\n");
+				}
+				new_env();
+				if (current == MAX_ENV) {
+					printf("buffer exceeds!");
+					exit(1);
+				}
 			}
 
 		|	expr ';' {
+				Type_ptr type = typing(NULL, $1, current);
+
+				// printtree($1);
 				print_expression($1, stdout);
-				printtree($1);
+				printf(" |== ");
+				printtype(type);
+				printf("\n");
+				new_env();
 				free_ast($1);
-				printf("\nplease input a lambda term with \";\":\n");  
+				printf("please input a lambda term with \";\":\n");
 			}
 		;
 
@@ -77,6 +99,8 @@ int main ()
 
 	printf("please input a lambda term with \";\":\n");  
 
+	init_type_env();
+	new_env();
 	yyparse ();
 	fclose(texfile);
 	return 0;

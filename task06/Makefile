@@ -29,6 +29,7 @@ lambda: $(COMOBJ)
 emalloc.o: emalloc.c
 lex.yy.o: lex.yy.c tree.h y.tab.h
 tree.o: tree.c tree.h
+type.o: type.c type.h tree.h tree.c
 y.tab.o: y.tab.c tree.h
 
 

@@ -313,8 +313,61 @@ void print_error(Type_ptr ty1, Type_ptr ty2)
 /* precondition: t1 and t2 must be final type */
 int unify(Type_ptr t1, Type_ptr t2)
 {
-	/* todo */
-	return 0;
+	t1 = simply(t1);
+	t2 = simply(t2);
+
+	if (t1 == NULL || t2 == NULL) {
+		printf("null type occur! typing error!\n");
+		return 0;
+	} else {
+		switch (t1->kind) {
+			case Int: {
+				if (t2->kind == Int) {
+					return 1;
+				} else if (t2->kind == Typevar) {
+					unify_leaf(t2, t1);
+					return 1;
+				} else {
+					print_error(t1, t2);
+					return 0;
+				}
+			}
+			case Typevar: {
+				if (t2->kind == Int) {
+					unify_leaf(t1, t2);
+					return 1;
+				} else if (t2->kind == Typevar) {
+					unify_leaf(t1, t2);
+					return 1;
+				} else {
+					if (is_occur_node(t1->index, t2)) {
+						print_error(t1, t2);
+						return 0;
+					} else {
+						unify_leaf_arrow(t1, t2);
+						return 1;
+					}
+				}
+			}
+			case Arrow: {
+				if (t2->kind == Int) {
+					print_error(t1, t2);
+					return 0;
+				} else if (t2->kind == Typevar) {
+					if (is_occur_node(t2->index, t1)) {
+						print_error(t1, t2);
+						return 0;
+					} else {
+						unify_leaf_arrow(t2, t1);
+						return 1;
+					}
+				} else {
+					return unify(get_left(t1), get_left(t2)) && unify(get_right(t1), get_right(t2));
+				}
+			}
+		}
+		return 1;
+	}
 }
 
 /* print type with index as type variable */
@@ -384,8 +437,93 @@ int is_debug = 0;
 /* post condition: the return type must be final */
 Type_ptr typing (Var_list_ptr abs, AST *t, int top)
 {
-	/* todo */
-	return NULL;
+	Type_ptr cond, left, right, result;
+
+	if (t == NULL) {
+		return NULL;
+	} else {
+		switch (t->kind) {
+			case CONST: {
+				return make_inttype();
+			}
+			case VAR: {
+				result = get_n_th(abs, t->value, top);
+				break;
+			}
+			case ABS: {
+				left = make_vartype();
+				right = typing(add_var_list(left, list_copy(abs)), t->rchild, top + 1);
+				if (left == NULL || right == NULL) {
+					result = NULL;
+				} else {
+					result = make_arrowtype(left, right);
+				}
+				break;
+			}
+			case COND: {
+				cond = typing(list_copy(abs), t->cond, top);
+				left = typing(list_copy(abs), t->lchild, top);	
+				right = typing(list_copy(abs), t->rchild, top);
+				if (cond->kind == Int && unify(left, right)) {
+					result = left;
+				} else {
+					result = NULL;
+				}
+				break;
+			}
+			case APP: {
+				left = typing(list_copy(abs), t->lchild, top);
+				if (left == NULL) {
+					result = NULL;
+					break;
+				} else {
+					right = typing(list_copy(abs), t->rchild, top);
+					if (right == NULL) {
+						result = NULL;
+						break;
+					} else {
+						left = final_type(left);
+						if (left != NULL) {
+							switch (left->kind) {
+								case Int: {
+									result = NULL;
+									break;
+								}
+								case Typevar: {
+									left = get_instance(left);
+									if (unify(left->left, right)) {
+										result = left->right;
+									} else {
+										result = NULL;
+									}
+									break;
+								}
+								case Arrow: {
+									if (unify(left->left, right)) {
+										result = left->right;
+									} else {
+										result = NULL;
+									}
+									break;
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		if (yyin == stdin) {
+			printf("typing step %d and top = %d:\n", ++step, top);
+			print_abs(abs);
+			print_env();
+			print_expression(t, stdout);
+			printf(" |== ");
+			print_type_debug(result);
+			printf("\n");
+		}
+		free_list(abs);
+		return result;
+	}
 }
 
 /* to change the index to letter */
@@ -538,7 +676,7 @@ void new_env(void)
 		sfree(type_env[i]);
 	}
 	for (i = 0; i < order; i++) {
-		index_order [i] = 0;
+		index_order[i] = 0;
 	}
 	nindex = 1;
 	order = 1;
